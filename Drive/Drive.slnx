@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Drive.Api/Drive.Api.csproj" />
+    <Project Path="Drive.Application/Drive.Application.csproj" />
+    <Project Path="Drive.Domain/Drive.Domain.csproj" />
+    <Project Path="Drive.Infrastructure/Drive.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="Drive.Tests/Drive.Tests.csproj" Id="e3559c0c-d87b-4ad2-8645-319cfe0f28c7" />
+  </Folder>
+</Solution>
