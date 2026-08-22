@@ -485,3 +485,5 @@ $RECYCLE.BIN/
 # Custom files and folders
 LocalStack_setup/
 run.md
+**/.vs/
+**/.vscode/
