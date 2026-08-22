@@ -1,4 +1,8 @@
-﻿using FluentValidation;
+﻿using Drive.Application.Common.Behaviors;
+using Drive.Application.Features.Auth;
+using Drive.Application.Features.DriveItems;
+using FluentValidation;
+using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Drive.Application;
@@ -14,6 +18,12 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(
             typeof(DependencyInjection).Assembly);
+
+        services.AddMediatR(cfg =>
+        {
+            cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+            cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
+        });
 
         return services;
     }

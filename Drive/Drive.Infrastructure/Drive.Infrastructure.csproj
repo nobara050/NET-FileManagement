@@ -32,7 +32,6 @@
 
   <ItemGroup>
     <Folder Include="Persistence\Repositories\" />
-    <Folder Include="Storage\S3\" />
   </ItemGroup>
 
 </Project>

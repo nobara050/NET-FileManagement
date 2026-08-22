@@ -480,3 +480,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+
+# Custom files and folders
+LocalStack_setup/
+run.md

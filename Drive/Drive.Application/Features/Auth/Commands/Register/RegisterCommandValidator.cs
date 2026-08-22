@@ -1,6 +1,6 @@
 ﻿using FluentValidation;
 
-namespace Drive.Application.Features.Auth;
+namespace Drive.Application.Features.Auth.Commands.Register;
 
 public sealed class RegisterCommandValidator
     : AbstractValidator<RegisterCommand>

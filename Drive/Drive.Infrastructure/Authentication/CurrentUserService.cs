@@ -20,7 +20,7 @@ public sealed class CurrentUserService : ICurrentUserService
         {
             var userId = _httpContextAccessor.HttpContext?
                 .User
-                .FindFirstValue("sub");
+                .FindFirstValue("userId");
 
             return Guid.TryParse(userId, out var id)
                 ? id

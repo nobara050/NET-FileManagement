@@ -1,5 +1,5 @@
-﻿using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.JsonWebTokens;
+﻿using Drive.Application.Common.Interfaces;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -7,7 +7,7 @@ using System.Text;
 
 namespace Drive.Infrastructure.Authentication;
 
-public sealed class JwtTokenService
+public sealed class JwtTokenService : IJwtTokenService
 {
     private readonly JwtOptions _options;
 
@@ -20,7 +20,7 @@ public sealed class JwtTokenService
     {
         var claims = new[]
         {
-            new Claim(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Sub, userId.ToString())
+            new Claim("userId", userId.ToString())
         };
 
         var key = new SymmetricSecurityKey(

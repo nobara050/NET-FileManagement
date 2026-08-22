@@ -1,4 +1,5 @@
 ﻿using Drive.Domain.Entities;
+using Drive.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -75,6 +76,11 @@ public class FileVersionConfiguration
             .WithMany(x => x.Versions)
             .HasForeignKey(x => x.DriveItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(x => x.CreatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(x => new
         {

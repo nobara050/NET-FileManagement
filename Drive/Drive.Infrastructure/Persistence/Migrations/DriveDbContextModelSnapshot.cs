@@ -122,7 +122,7 @@ namespace Drive.Infrastructure.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Drive.Domain.Entities.DriveItemPermission", b =>
+            modelBuilder.Entity("Drive.Domain.Entities.DriveItemRoleAssignment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -141,15 +141,19 @@ namespace Drive.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("drive_item_id");
 
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)")
-                        .HasColumnName("role");
+                    b.Property<bool>("IsExplicit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_explicit");
 
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamptz")
-                        .HasColumnName("updated_at");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.Property<Guid?>("SourceItemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("source_item_id");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid")
@@ -160,16 +164,22 @@ namespace Drive.Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedBy");
 
                     b.HasIndex("DriveItemId")
-                        .HasDatabaseName("IX_drive_item_permissions_drive_item_id");
+                        .HasDatabaseName("IX_drive_item_role_assignments_drive_item_id");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("IX_drive_item_role_assignments_role_id");
+
+                    b.HasIndex("SourceItemId")
+                        .HasDatabaseName("IX_drive_item_role_assignments_source_item_id");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("IX_drive_item_permissions_user_id");
+                        .HasDatabaseName("IX_drive_item_role_assignments_user_id");
 
                     b.HasIndex("DriveItemId", "UserId")
                         .IsUnique()
-                        .HasDatabaseName("UX_drive_item_permissions_drive_item_user");
+                        .HasDatabaseName("UX_drive_item_role_assignments_item_user");
 
-                    b.ToTable("drive_item_permissions", (string)null);
+                    b.ToTable("drive_item_role_assignments", (string)null);
                 });
 
             modelBuilder.Entity("Drive.Domain.Entities.FileVersion", b =>
@@ -230,6 +240,8 @@ namespace Drive.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CreatedBy");
+
                     b.HasIndex("DriveItemId")
                         .IsUnique()
                         .HasDatabaseName("UX_file_versions_current")
@@ -249,6 +261,54 @@ namespace Drive.Infrastructure.Persistence.Migrations
 
                             t.HasCheckConstraint("CK_file_versions_version_number_positive", "version_number > 0");
                         });
+                });
+
+            modelBuilder.Entity("Drive.Domain.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("expires_at");
+
+                    b.Property<Guid?>("ReplacedByTokenId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("replaced_by_token_id");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamptz")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("IX_refresh_tokens_expires_at");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("UX_refresh_tokens_token_hash");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("IX_refresh_tokens_user_id");
+
+                    b.ToTable("refresh_tokens", (string)null);
                 });
 
             modelBuilder.Entity("Drive.Infrastructure.Identity.ApplicationUser", b =>
@@ -455,6 +515,12 @@ namespace Drive.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Drive.Domain.Entities.DriveItem", b =>
                 {
+                    b.HasOne("Drive.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("Drive.Domain.Entities.DriveItem", "Parent")
                         .WithMany("Children")
                         .HasForeignKey("ParentId")
@@ -463,7 +529,39 @@ namespace Drive.Infrastructure.Persistence.Migrations
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("Drive.Domain.Entities.DriveItemPermission", b =>
+            modelBuilder.Entity("Drive.Domain.Entities.DriveItemRoleAssignment", b =>
+                {
+                    b.HasOne("Drive.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Drive.Domain.Entities.DriveItem", null)
+                        .WithMany()
+                        .HasForeignKey("DriveItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Drive.Domain.Entities.DriveItem", null)
+                        .WithMany()
+                        .HasForeignKey("SourceItemId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Drive.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Drive.Domain.Entities.FileVersion", b =>
                 {
                     b.HasOne("Drive.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
@@ -472,29 +570,21 @@ namespace Drive.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.HasOne("Drive.Domain.Entities.DriveItem", "DriveItem")
-                        .WithMany("Permissions")
-                        .HasForeignKey("DriveItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Drive.Infrastructure.Identity.ApplicationUser", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("DriveItem");
-                });
-
-            modelBuilder.Entity("Drive.Domain.Entities.FileVersion", b =>
-                {
-                    b.HasOne("Drive.Domain.Entities.DriveItem", "DriveItem")
                         .WithMany("Versions")
                         .HasForeignKey("DriveItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("DriveItem");
+                });
+
+            modelBuilder.Entity("Drive.Domain.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("Drive.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -552,9 +642,12 @@ namespace Drive.Infrastructure.Persistence.Migrations
                 {
                     b.Navigation("Children");
 
-                    b.Navigation("Permissions");
-
                     b.Navigation("Versions");
+                });
+
+            modelBuilder.Entity("Drive.Infrastructure.Identity.ApplicationUser", b =>
+                {
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

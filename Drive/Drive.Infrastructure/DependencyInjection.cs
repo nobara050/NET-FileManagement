@@ -1,7 +1,11 @@
-﻿using Drive.Infrastructure.Identity;
+﻿using Amazon.S3;
 using Drive.Application.Common.Interfaces;
 using Drive.Infrastructure.Authentication;
+using Drive.Infrastructure.Authorization;
+using Drive.Infrastructure.Identity;
 using Drive.Infrastructure.Persistence;
+using Drive.Infrastructure.Seeding;
+using Drive.Infrastructure.Storage.S3;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +25,12 @@ public static class DependencyInjection
         // Add DbContext with PostgreSQL provider
         services.AddDbContext<DriveDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        // Add Repository
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+        // Add Drive item access query
+        services.AddScoped<IDriveItemAccessQuery, DriveItemAccessQuery>();
 
         // Add Data Protection
         services.AddDataProtection();
@@ -45,11 +55,56 @@ public static class DependencyInjection
         services.Configure<JwtOptions>(
             configuration.GetSection(JwtOptions.SectionName));
 
-        services.AddScoped<JwtTokenService>();
+        services.AddScoped<IJwtTokenService, JwtTokenService>();
+
+        services.AddScoped<IRefreshTokenService, RefreshTokenService>();
 
         services.AddHttpContextAccessor();
 
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+        // Add Authorization services
+        services.AddScoped<IPermissionService, PermissionService>();
+
+        // Add Permission Materializer
+        services.AddScoped<IPermissionMaterializer, PermissionMaterializer>();
+
+        // Add Identity Service
+        services.AddScoped<IIdentityService, IdentityService>();
+
+        // Add Seeder
+        services.AddScoped<Seeder>();
+
+        // Configure S3 options
+        services.Configure<S3Options>(
+            configuration.GetSection(S3Options.SectionName));
+
+        var s3Options = configuration
+        .GetSection(S3Options.SectionName)
+        .Get<S3Options>();
+
+        if (s3Options is null)
+        {
+            throw new InvalidOperationException(
+                "S3 configuration is missing.");
+        }
+
+        services.AddSingleton<IAmazonS3>(_ =>
+        {
+            var config = new AmazonS3Config
+            {
+                ServiceURL = s3Options.ServiceUrl,
+                AuthenticationRegion = s3Options.Region,
+                ForcePathStyle = true
+            };
+
+            return new AmazonS3Client(
+                "test",
+                "test",
+                config);
+        });
+
+        services.AddScoped<IFileStorage, S3FileStorage>();
 
         return services;
     }

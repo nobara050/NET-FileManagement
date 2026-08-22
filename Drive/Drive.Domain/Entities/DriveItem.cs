@@ -34,7 +34,4 @@ public class DriveItem
 
     public ICollection<FileVersion> Versions { get; set; }
     = new List<FileVersion>();
-
-    public ICollection<DriveItemPermission> Permissions { get; set; }
-        = new List<DriveItemPermission>();
 }
