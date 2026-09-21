@@ -1,4 +1,4 @@
-﻿using Drive.Application.Common.Behaviors;
+using Drive.Application.Common.Behaviors;
 using Drive.Application.Features.Auth;
 using Drive.Application.Features.DriveItems;
 using FluentValidation;
@@ -22,6 +22,8 @@ public static class DependencyInjection
         services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+            // TracingBehavior đứng đầu pipeline để span bao trùm cả validation + handler
+            cfg.AddOpenBehavior(typeof(TracingBehavior<,>));
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 

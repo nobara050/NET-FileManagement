@@ -1,4 +1,4 @@
-﻿using Drive.Application.Features.DriveItems.Models;
+using Drive.Application.Features.DriveItems.Models;
 using MediatR;
 
 namespace Drive.Application.Features.DriveItems.Commands.CreateFile;
@@ -6,4 +6,4 @@ namespace Drive.Application.Features.DriveItems.Commands.CreateFile;
 public sealed record CreateFileCommand(
     Guid? ParentId,
     FileUpload File)
-    : IRequest<DriveItemResult?>;
+    : IRequest<DriveItemResult>;

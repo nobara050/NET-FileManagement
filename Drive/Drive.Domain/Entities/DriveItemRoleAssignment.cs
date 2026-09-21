@@ -1,4 +1,4 @@
-﻿namespace Drive.Domain.Entities;
+namespace Drive.Domain.Entities;
 
 public class DriveItemRoleAssignment
 {
@@ -12,7 +12,7 @@ public class DriveItemRoleAssignment
 
     public Guid? SourceItemId { get; set; }
 
-    public bool IsExplicit { get; set; }
+    public bool IsDirect { get; set; }
 
     public Guid CreatedBy { get; set; }
 

@@ -1,8 +1,9 @@
-﻿namespace Drive.Application.Features.DriveItems
+namespace Drive.Application.Features.DriveItems
 {
     public enum ListDriveItemsScope
     {
         Owned = 0,
-        Accessible = 1
+        Shared = 1,
+        All = 2
     }
 }

@@ -1,9 +1,11 @@
-﻿using Amazon.S3;
+using Amazon.S3;
 using Drive.Application.Common.Interfaces;
 using Drive.Infrastructure.Authentication;
 using Drive.Infrastructure.Authorization;
 using Drive.Infrastructure.Identity;
 using Drive.Infrastructure.Persistence;
+using Drive.Infrastructure.Persistence.Queries;
+using Drive.Infrastructure.Persistence.Repositories;
 using Drive.Infrastructure.Seeding;
 using Drive.Infrastructure.Storage.S3;
 using Microsoft.AspNetCore.Identity;
@@ -23,14 +25,18 @@ public static class DependencyInjection
             configuration.GetConnectionString("DefaultConnection");
 
         // Add DbContext with PostgreSQL provider
+        // Npgsql OpenTelemetry tracing được đăng ký qua AddNpgsql() trong OTel builder tại Program.cs
         services.AddDbContext<DriveDbContext>(options =>
             options.UseNpgsql(connectionString));
 
         // Add Repository
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<IDriveItemRepository, DriveItemRepository>();
+        services.AddScoped<IDriveItemRoleAssignmentRepository, DriveItemRoleAssignmentRepository>();
 
         // Add Drive item access query
         services.AddScoped<IDriveItemAccessQuery, DriveItemAccessQuery>();
+        services.AddScoped<ISharedDriveItemQuery, SharedDriveItemQuery>();
 
         // Add Data Protection
         services.AddDataProtection();
@@ -71,6 +77,8 @@ public static class DependencyInjection
 
         // Add Identity Service
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IUserManagementService, UserManagementService>();
+        services.AddScoped<IRoleService, RoleService>();
 
         // Add Seeder
         services.AddScoped<Seeder>();

@@ -1,4 +1,6 @@
-﻿using AutoMapper;
+using AutoMapper;
+using Drive.Api.Authorization;
+using Drive.Application.Common.Authorization;
 using Drive.Application.Common.Models;
 using Drive.Application.Features.DriveItems;
 using Drive.Application.Features.DriveItems.Queries.ListDriveItems;
@@ -25,6 +27,7 @@ public sealed class ListDriveItemsController : ControllerBase
         _mapper = mapper;
     }
 
+    [RequirePermission(Permissions.DriveRead)]
     [HttpGet]
     public async Task<ActionResult<PagedListDriveItemsResponse>> List(
         [FromQuery] Guid? parentId,

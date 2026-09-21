@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Drive.Api.Features.DriveItems.List;
 using Drive.Application.Features.DriveItems.Commands.CreateFile;
 using Drive.Application.Features.DriveItems.Models;
@@ -31,6 +31,16 @@ public sealed class CreateFileController : ControllerBase
         CancellationToken cancellationToken)
     {
         var file = request.File;
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Bad Request",
+                Detail = "A valid, non-empty file is required.",
+                Instance = HttpContext.Request.Path
+            });
+        }
 
         var fileUpload = new FileUpload
         {
@@ -45,11 +55,6 @@ public sealed class CreateFileController : ControllerBase
                 request.ParentId,
                 fileUpload),
             cancellationToken);
-
-        if (result is null)
-        {
-            return BadRequest();
-        }
 
         return Created(
             $"/api/drive-items?parentId={result.ParentId}",

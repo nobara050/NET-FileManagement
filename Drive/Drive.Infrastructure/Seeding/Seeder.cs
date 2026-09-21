@@ -1,4 +1,4 @@
-﻿using Drive.Application.Common.Authorization;
+using Drive.Application.Common.Authorization;
 using Drive.Application.Common.Interfaces;
 using Drive.Domain.Entities;
 using Drive.Domain.Enums;
@@ -13,10 +13,12 @@ namespace Drive.Infrastructure.Seeding;
 public sealed class Seeder
 {
     private const string SeedPassword = "Password123!";
+    private const string AdminPassword = "Password123!";
 
+    private const string AdminEmail = "admin@test";
     private const string OwnerEmail = "owner@test";
+    private const string DownloaderEmail = "downloader@test";
     private const string ViewerEmail = "viewer@test";
-    private const string EditorEmail = "editor@test";
     private const string NoAccessEmail = "noaccess@test";
 
     private static readonly Guid SeedRootId =
@@ -41,72 +43,80 @@ public sealed class Seeder
     private readonly RoleManager<IdentityRole<Guid>> _roleManager;
     private readonly DriveDbContext _dbContext;
     private readonly IPermissionMaterializer _permissionMaterializer;
+    private readonly IFileStorage _fileStorage;
 
     public Seeder(
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole<Guid>> roleManager,
         DriveDbContext dbContext,
-        IPermissionMaterializer permissionMaterializer)
+        IPermissionMaterializer permissionMaterializer,
+        IFileStorage fileStorage)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _dbContext = dbContext;
         _permissionMaterializer = permissionMaterializer;
+        _fileStorage = fileStorage;
     }
 
     public async Task SeedAsync(
-    CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
+        await _fileStorage.EnsureBucketExistsAsync(cancellationToken);
+
         // ============================================================
         // 1. ROLES & PERMISSIONS
-        //
-        // Role = permission profile.
-        // Runtime authorization MUST check permission claims,
-        // NOT hard-code role names such as Viewer / Editor.
         // ============================================================
+
+        await SeedRoleAsync(
+            "Admin",
+            new[]
+            {
+                Permissions.DriveRead,
+                Permissions.DriveDownload,
+                Permissions.DriveDelete
+            });
+
+        await SeedRoleAsync(
+            "Downloader",
+            new[]
+            {
+                Permissions.DriveRead,
+                Permissions.DriveDownload
+            });
 
         await SeedRoleAsync(
             "Viewer",
             new[]
             {
-            Permissions.DriveRead,
-            Permissions.DriveDownload
-            });
-
-        await SeedRoleAsync(
-            "Editor",
-            new[]
-            {
-            Permissions.DriveRead,
-            Permissions.DriveDownload,
-            Permissions.DriveCreate,
-            Permissions.DriveUpdate,
-            Permissions.DriveDelete,
-            Permissions.DriveMove,
-            Permissions.DriveCopy
+                Permissions.DriveRead
             });
 
         // ============================================================
         // 2. TEST USERS
-        //
-        // Development/manual authorization test accounts only.
-        // These users exist so the permission matrix can be tested
-        // without manually registering accounts.
-        //
-        // Runtime authorization MUST NOT depend on these email addresses.
         // ============================================================
+
+        var admin = await SeedUserAsync(
+            AdminEmail,
+            "Drive Admin User",
+            AdminPassword);
+
+        if (!await _userManager.IsInRoleAsync(admin, "Admin"))
+        {
+            await _userManager.AddToRoleAsync(admin, "Admin");
+        }
 
         var owner = await SeedUserAsync(
             OwnerEmail,
             "Drive Test Owner");
 
+        var downloader = await SeedUserAsync(
+            DownloaderEmail,
+            "Drive Test Downloader");
+
         var viewer = await SeedUserAsync(
             ViewerEmail,
             "Drive Test Viewer");
-
-        var editor = await SeedUserAsync(
-            EditorEmail,
-            "Drive Test Editor");
 
         var noAccess = await SeedUserAsync(
             NoAccessEmail,
@@ -114,19 +124,6 @@ public sealed class Seeder
 
         // ============================================================
         // 3. TEST DRIVE ITEMS
-        //
-        // Dataset:
-        //
-        // Owner Root
-        // ├── Private Folder
-        // │   └── Private File
-        // │
-        // └── Shared Folder
-        //     ├── Shared File A
-        //     └── Shared File B
-        //
-        // All items belong to the Owner user.
-        // Permissions are assigned in a later section.
         // ============================================================
 
         var now = DateTimeOffset.UtcNow;
@@ -187,31 +184,18 @@ public sealed class Seeder
 
         // ============================================================
         // 4. EXPLICIT ROLE ASSIGNMENTS
-        //
-        // Viewer and Editor are assigned explicitly to Shared Folder.
-        //
-        // IMPORTANT:
-        // Runtime authorization does NOT depend on the role name.
-        // The role's "permission" claims determine what the user can do.
-        //
-        // Viewer -> drive.read, drive.download
-        // Editor -> drive.read, drive.download, drive.create, ...
         // ============================================================
 
         var viewerRole = await _roleManager.FindByNameAsync("Viewer");
-
         if (viewerRole is null)
         {
-            throw new InvalidOperationException(
-                "Seed role 'Viewer' was not found.");
+            throw new InvalidOperationException("Seed role 'Viewer' was not found.");
         }
 
-        var editorRole = await _roleManager.FindByNameAsync("Editor");
-
-        if (editorRole is null)
+        var downloaderRole = await _roleManager.FindByNameAsync("Downloader");
+        if (downloaderRole is null)
         {
-            throw new InvalidOperationException(
-                "Seed role 'Editor' was not found.");
+            throw new InvalidOperationException("Seed role 'Downloader' was not found.");
         }
 
         await SeedRoleAssignmentAsync(
@@ -222,30 +206,27 @@ public sealed class Seeder
 
         await SeedRoleAssignmentAsync(
             SeedSharedFolderId,
-            editor.Id,
-            editorRole.Id,
+            downloader.Id,
+            downloaderRole.Id,
             owner.Id);
 
         // ============================================================
         // 5. MATERIALIZE INHERITED PERMISSIONS
-        //
-        // Shared Folder permissions are inherited by:
-        // - Seed Shared File A.txt
-        // - Seed Shared File B.pdf
-        //
-        // We intentionally use the existing materializer instead of
-        // manually inserting inherited assignments.
         // ============================================================
 
         await _permissionMaterializer.MaterializeAsync(
             SeedSharedFolderId,
             viewer.Id,
-            viewerRole.Id);
+            viewerRole.Id,
+            owner.Id,
+            cancellationToken);
 
         await _permissionMaterializer.MaterializeAsync(
             SeedSharedFolderId,
-            editor.Id,
-            editorRole.Id);
+            downloader.Id,
+            downloaderRole.Id,
+            owner.Id,
+            cancellationToken);
     }
 
     private async Task SeedRoleAsync(
@@ -278,6 +259,11 @@ public sealed class Seeder
         var existingClaims =
             await _roleManager.GetClaimsAsync(role);
 
+        foreach (var obsoleteClaim in existingClaims.Where(x => x.Type == "permission" && !permissions.Contains(x.Value)))
+        {
+            await _roleManager.RemoveClaimAsync(role, obsoleteClaim);
+        }
+
         foreach (var permission in permissions)
         {
             var exists = existingClaims.Any(x =>
@@ -306,8 +292,9 @@ public sealed class Seeder
     }
 
     private async Task<ApplicationUser> SeedUserAsync(
-    string email,
-    string displayName)
+        string email,
+        string displayName,
+        string password = SeedPassword)
     {
         var existingUser = await _userManager.FindByEmailAsync(email);
 
@@ -326,7 +313,7 @@ public sealed class Seeder
 
         var result = await _userManager.CreateAsync(
             user,
-            SeedPassword);
+            password);
 
         if (!result.Succeeded)
         {
@@ -341,41 +328,84 @@ public sealed class Seeder
     }
 
     private async Task SeedDriveItemAsync(
-    Guid id,
-    Guid ownerId,
-    Guid? parentId,
-    string name,
-    DriveItemType itemType,
-    DateTimeOffset createdAt,
-    string? mimeType = null,
-    long? size = null)
+        Guid id,
+        Guid ownerId,
+        Guid? parentId,
+        string name,
+        DriveItemType itemType,
+        DateTimeOffset createdAt,
+        string? mimeType = null,
+        long? size = null,
+        CancellationToken cancellationToken = default)
     {
         var existing = await _dbContext.DriveItems
-            .SingleOrDefaultAsync(x => x.Id == id);
+            .IgnoreQueryFilters()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
 
-        if (existing is not null)
+        if (existing is null)
         {
-            return;
+            _dbContext.DriveItems.Add(
+                new DriveItem
+                {
+                    Id = id,
+                    OwnerId = ownerId,
+                    ParentId = parentId,
+                    Name = name,
+                    ItemType = itemType,
+                    MimeType = mimeType,
+                    Size = size,
+                    Checksum = null,
+                    IsDeleted = false,
+                    DeletedAt = null,
+                    CreatedAt = createdAt,
+                    UpdatedAt = createdAt
+                });
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        _dbContext.DriveItems.Add(
-            new DriveItem
-            {
-                Id = id,
-                OwnerId = ownerId,
-                ParentId = parentId,
-                Name = name,
-                ItemType = itemType,
-                MimeType = mimeType,
-                Size = size,
-                Checksum = null,
-                IsDeleted = false,
-                DeletedAt = null,
-                CreatedAt = createdAt,
-                UpdatedAt = createdAt
-            });
+        if (itemType == DriveItemType.File)
+        {
+            var existingVersion = await _dbContext.FileVersions
+                .IgnoreQueryFilters()
+                .SingleOrDefaultAsync(v => v.DriveItemId == id && v.IsCurrent, cancellationToken);
 
-        await _dbContext.SaveChangesAsync();
+            if (existingVersion is null)
+            {
+                var versionId = Guid.NewGuid();
+                var objectKey = $"files/{id}/{versionId}";
+                var sampleText = $"Sample seed content for file: {name}\r\nItem ID: {id}\r\nCreated At: {createdAt:O}";
+                var sampleBytes = System.Text.Encoding.UTF8.GetBytes(sampleText);
+
+                if (!await _fileStorage.ExistsAsync(objectKey, cancellationToken))
+                {
+                    using var stream = new MemoryStream(sampleBytes);
+                    await _fileStorage.UploadAsync(
+                        objectKey,
+                        stream,
+                        mimeType ?? "text/plain",
+                        cancellationToken);
+                }
+
+                _dbContext.FileVersions.Add(
+                    new FileVersion
+                    {
+                        Id = versionId,
+                        DriveItemId = id,
+                        VersionNumber = 1,
+                        S3Bucket = _fileStorage.BucketName,
+                        S3ObjectKey = objectKey,
+                        Size = sampleBytes.Length,
+                        Checksum = null,
+                        MimeType = mimeType ?? "text/plain",
+                        IsCurrent = true,
+                        CreatedBy = ownerId,
+                        CreatedAt = createdAt
+                    });
+
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+        }
     }
 
     private async Task SeedRoleAssignmentAsync(
@@ -391,10 +421,10 @@ public sealed class Seeder
 
         if (existing is not null)
         {
-            if (!existing.IsExplicit)
+            if (!existing.IsDirect)
             {
                 throw new InvalidOperationException(
-                    $"Expected explicit assignment for user '{userId}' " +
+                    $"Expected direct assignment for user '{userId}' " +
                     $"on drive item '{driveItemId}'.");
             }
 
@@ -402,7 +432,7 @@ public sealed class Seeder
             {
                 existing.RoleId = roleId;
                 existing.SourceItemId = null;
-                existing.IsExplicit = true;
+                existing.IsDirect = true;
                 existing.CreatedBy = createdBy;
                 existing.CreatedAt = DateTimeOffset.UtcNow;
 
@@ -420,7 +450,7 @@ public sealed class Seeder
                 UserId = userId,
                 RoleId = roleId,
                 SourceItemId = null,
-                IsExplicit = true,
+                IsDirect = true,
                 CreatedBy = createdBy,
                 CreatedAt = DateTimeOffset.UtcNow
             });

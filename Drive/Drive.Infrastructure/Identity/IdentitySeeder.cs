@@ -1,4 +1,4 @@
-﻿using Drive.Application.Common.Authorization;
+using Drive.Application.Common.Authorization;
 using Microsoft.AspNetCore.Identity;
 
 namespace Drive.Infrastructure.Identity;
@@ -26,9 +26,8 @@ public static class IdentitySeeder
                 Permissions.DriveDownload,
                 Permissions.DriveCreate,
                 Permissions.DriveUpdate,
-                Permissions.DriveDelete,
                 Permissions.DriveMove,
-                Permissions.DriveCopy
+                Permissions.DriveDelete
             });
     }
 

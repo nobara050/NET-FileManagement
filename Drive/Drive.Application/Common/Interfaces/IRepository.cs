@@ -1,4 +1,4 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 namespace Drive.Application.Common.Interfaces;
 
@@ -26,6 +26,8 @@ public interface IRepository<TEntity>
         CancellationToken cancellationToken = default);
 
     void Update(TEntity entity);
+
+    void Remove(TEntity entity);
 
     Task SaveChangesAsync(
         CancellationToken cancellationToken = default);

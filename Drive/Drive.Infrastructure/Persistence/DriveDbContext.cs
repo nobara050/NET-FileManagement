@@ -1,4 +1,4 @@
-﻿using Drive.Domain.Entities;
+using Drive.Domain.Entities;
 using Drive.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -12,6 +12,8 @@ namespace Drive.Infrastructure.Persistence
         }
 
         public DbSet<DriveItem> DriveItems => Set<DriveItem>();
+
+        public DbSet<FileVersion> FileVersions => Set<FileVersion>();
 
         public DbSet<DriveItemRoleAssignment> DriveItemRoleAssignments
             => Set<DriveItemRoleAssignment>();

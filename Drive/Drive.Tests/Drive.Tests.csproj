@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -13,6 +13,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
@@ -24,6 +25,7 @@
     <ProjectReference Include="..\Drive.Application\Drive.Application.csproj" />
     <ProjectReference Include="..\Drive.Domain\Drive.Domain.csproj" />
     <ProjectReference Include="..\Drive.Infrastructure\Drive.Infrastructure.csproj" />
+    <ProjectReference Include="..\Drive.Api\Drive.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>

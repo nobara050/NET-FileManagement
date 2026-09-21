@@ -1,4 +1,4 @@
-﻿using Drive.Domain.Entities;
+using Drive.Domain.Entities;
 using Drive.Infrastructure.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -33,8 +33,8 @@ public class DriveItemRoleAssignmentConfiguration
         builder.Property(x => x.SourceItemId)
             .HasColumnName("source_item_id");
 
-        builder.Property(x => x.IsExplicit)
-            .HasColumnName("is_explicit")
+        builder.Property(x => x.IsDirect)
+            .HasColumnName("is_direct")
             .IsRequired()
             .HasDefaultValue(true);
 
@@ -47,7 +47,7 @@ public class DriveItemRoleAssignmentConfiguration
             .HasColumnType("timestamptz")
             .IsRequired();
 
-        // A user can have only one explicit role on the same item.
+        // A user can have only one role assignment (direct or inherited) on the same item.
         builder.HasIndex(x => new
         {
             x.DriveItemId,

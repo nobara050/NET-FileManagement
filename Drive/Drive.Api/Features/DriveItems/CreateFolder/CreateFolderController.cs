@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Drive.Api.Features.DriveItems.List;
 using Drive.Application.Features.DriveItems.Commands.CreateFolder;
 using MediatR;
@@ -33,11 +33,6 @@ public sealed class CreateFolderController : ControllerBase
                 request.ParentId,
                 request.Name),
             cancellationToken);
-
-        if (result is null)
-        {
-            return BadRequest();
-        }
 
         return Created(
             $"/api/drive-items?parentId={result.ParentId}",

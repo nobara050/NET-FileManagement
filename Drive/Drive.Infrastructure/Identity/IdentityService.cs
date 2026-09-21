@@ -1,4 +1,4 @@
-﻿using Drive.Application.Common.Interfaces;
+using Drive.Application.Common.Interfaces;
 using Drive.Application.Features.Auth.Models;
 using Microsoft.AspNetCore.Identity;
 
@@ -19,6 +19,9 @@ public sealed class IdentityService : IIdentityService
         string password,
         CancellationToken cancellationToken = default)
     {
+        using var activity = Drive.Application.Common.Telemetry.ActivitySources.Infrastructure
+            .StartActivity("IdentityService.AuthenticateAsync", System.Diagnostics.ActivityKind.Internal);
+
         var user = await _userManager.FindByEmailAsync(email);
 
         if (user is null)
@@ -44,6 +47,9 @@ public sealed class IdentityService : IIdentityService
         string displayName,
         CancellationToken cancellationToken = default)
     {
+        using var activity = Drive.Application.Common.Telemetry.ActivitySources.Infrastructure
+            .StartActivity("IdentityService.RegisterAsync", System.Diagnostics.ActivityKind.Internal);
+
         var existingUser = await _userManager.FindByEmailAsync(email);
 
         if (existingUser is not null)
@@ -83,5 +89,21 @@ public sealed class IdentityService : IIdentityService
             Succeeded = true,
             UserId = user.Id
         };
+    }
+
+    public async Task<IList<string>> GetRolesAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        using var activity = Drive.Application.Common.Telemetry.ActivitySources.Infrastructure
+            .StartActivity("IdentityService.GetRolesAsync", System.Diagnostics.ActivityKind.Internal);
+
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return [];
+        }
+
+        return await _userManager.GetRolesAsync(user);
     }
 }

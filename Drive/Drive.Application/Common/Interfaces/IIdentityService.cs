@@ -1,4 +1,4 @@
-﻿using Drive.Application.Features.Auth.Models;
+using Drive.Application.Features.Auth.Models;
 
 namespace Drive.Application.Common.Interfaces;
 
@@ -13,5 +13,9 @@ public interface IIdentityService
         string email,
         string password,
         string displayName,
+        CancellationToken cancellationToken = default);
+
+    Task<IList<string>> GetRolesAsync(
+        Guid userId,
         CancellationToken cancellationToken = default);
 }
