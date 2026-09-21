@@ -1,6 +1,6 @@
 # Drive API
 
-A lightweight RESTful backend service for file and folder management with role-based access control and item sharing, built with .NET 10.
+A RESTful API backend service for file and folder management with role-based access control and item sharing.
 
 ---
 
