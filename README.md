@@ -40,7 +40,7 @@ cp .env.example .env
 dotnet run --project Drive/Drive.Api
 ```
 
-API will be accessible at: `https://localhost:5213` (or `http://localhost:5213`)  
+API will be accessible at: `https://localhost:5213` 
 Swagger UI: `https://localhost:5213/swagger`
 
 ---
@@ -107,7 +107,7 @@ Swagger UI: `https://localhost:5213/swagger`
 | **Grafana** | `http://localhost:3000` | `admin` / `admin` | Observability dashboard |
 | **Prometheus** | `http://localhost:9090` | - | Metrics scraper & engine |
 | **Loki** | `http://localhost:3100` | - | Log aggregation sink |
-| **Tempo** | `http://localhost:3200` (HTTP) / `4317` (gRPC) | - | Distributed tracing receiver |
+| **Tempo** | `http://localhost:3200` | - | Distributed tracing receiver |
 
 ---
 
