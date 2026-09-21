@@ -31,9 +31,12 @@ services:
     ports:
       - "4566:4566"
     environment:
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?}
       - SERVICES=s3
       - DEBUG=1
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     volumes:
       - localstack-data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
@@ -84,7 +87,7 @@ services:
   # 5. Tempo (Distributed Tracing)
   # ============================================================
   tempo:
-    image: grafana/tempo:2.4.1
+    image: grafana/tempo:latest
     container_name: drive-tempo
     ports:
       - "3200:3200"   # Tempo HTTP UI / API
